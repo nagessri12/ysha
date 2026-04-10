@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .profile-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+    
+    .profile-avatar-wrapper {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .profile-avatar-lg {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        padding: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .profile-avatar-lg img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--bg-main);
+    }
+    
+    .camera-badge {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-md);
+        border: 3px solid var(--bg-main);
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+    
+    .camera-badge:hover {
+        transform: scale(1.1);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+    
+    .stat-card {
+        background: var(--surface-variant);
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        background: var(--outline);
+    }
+    
+    .stat-value {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 1.875rem;
+        font-weight: 800;
+        color: var(--primary);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+    }
+
+    .bio-textarea {
+        min-height: 120px;
+        resize: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Central Profile Section -->
+    <header class="profile-header">
+        <form id="profile-pic-form" action="{% url 'update_profile' %}" method="POST" enctype="multipart/form-data" onclick="document.getElementById('profile_pic_input').click();">
+            {% csrf_token %}
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-lg">
+                    <img id="profile-img-preview" src="{% if user.profile_pic %}{{ user.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}{% endif %}" alt="{{ user.username }}">
+                </div>
+                <div class="camera-badge">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                </div>
+            </div>
+            <input type="file" id="profile_pic_input" name="profile_pic" class="hidden" accept="image/*" onchange="document.getElementById('profile-pic-form').submit();"/>
+        </form>
+        
+        <div class="profile-info">
+            <h2 class="text-2xl font-bold mb-2">{% if user.full_name %}{{ user.full_name }}{% else %}{{ user.username }}{% endif %}</h2>
+            <span class="btn-ghost text-xs font-bold px-4 py-1 rounded-full uppercase" style="background: rgba(101, 47, 231, 0.1);">Digital Visionary</span>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-value">{{ friends_count }}</span>
+            <span class="stat-label">Friends</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ posts_count }}</span>
+            <span class="stat-label">Posts</span>
+        </div>
+    </section>
+
+    <!-- Form Fields -->
+    <form action="{% url 'update_profile' %}" method="POST" class="profile-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="form-label">User ID</label>
+            <div class="input-container">
+                <span class="material-symbols-outlined icon">alternate_email</span>
+                <input class="input-field" readonly type="text" value="{{ user.username }}" style="background: rgba(255,255,255,0.3);"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Bio</label>
+            <div class="input-container">
+                <span class="material-symbols-outlined icon" style="top: 1.5rem; transform: none;">edit_note</span>
+                <textarea name="bio" class="input-field bio-textarea" placeholder="Describe your luminous pulse...">{% if user.bio %}{{ user.bio }}{% endif %}</textarea>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full mt-4">
+            Save Changes
+        </button>
+    </form>
+</div>
+{% endblock %}

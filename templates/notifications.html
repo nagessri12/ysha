@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .notif-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem;
+        background: var(--surface);
+        backdrop-filter: var(--glass-blur);
+        border-radius: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+    }
+    
+    .notif-card:hover {
+        background: white;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .notif-user {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .notif-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-small {
+        padding: 0.625rem 1.25rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        border-radius: 9999px;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-accept {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(101, 47, 231, 0.2);
+    }
+    
+    .btn-decline {
+        background: var(--surface-variant);
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-container">
+    <header class="discover-header" style="display: flex; align-items: center; gap: 1rem;">
+        <button onclick="window.location.href='/home'" class="btn-ghost p-2 rounded-full">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div>
+            <h2 class="text-2xl font-bold mb-1">Notifications</h2>
+            <p class="text-xs text-muted font-bold uppercase tracking-wider">Manage your community requests</p>
+        </div>
+    </header>
+
+    <div class="notif-list">
+        {% for req in requests %}
+        <div id="request-{{ req.id }}" class="notif-card">
+            <div class="notif-user">
+                <img src="{% if req.sender.profile_pic %}{{ req.sender.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ req.sender.username }}{% endif %}" class="avatar" style="width: 50px; height: 50px; border-radius: 1.25rem;">
+                <div>
+                    <h3 class="chat-name">{% if req.sender.full_name %}{{ req.sender.full_name }}{% else %}{{ req.sender.username }}{% endif %}</h3>
+                    <p class="text-xs text-muted font-bold">Sent you a pulse request</p>
+                </div>
+            </div>
+            <div class="notif-actions">
+                <button onclick="updateRequest({{ req.id }}, 'accepted')" class="btn-small btn-accept">Accept</button>
+                <button onclick="updateRequest({{ req.id }}, 'declined')" class="btn-small btn-decline">Decline</button>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not requests %}
+        <div class="glass-card text-center py-16" style="opacity: 0.6;">
+            <span class="material-symbols-outlined text-primary mb-4" style="font-size: 3.5rem;">notifications_off</span>
+            <p class="text-sm font-bold italic">No new requests. You're all caught up!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function updateRequest(id, action) {
+    try {
+        const res = await fetch('/api/friend_request/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({request_id: id, action: action})
+        });
+        if (res.ok) {
+            const card = document.getElementById(`request-${id}`);
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+</script>
+{% endblock %}

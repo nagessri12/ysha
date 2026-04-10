@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+<title>Isha - Portal</title>
+<style>
+    /* Specific auth page styles that might not be in generic style.css */
+    .auth-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: var(--bg-main);
+    }
+    
+    .auth-container {
+        width: 100%;
+        max-width: 400px;
+        z-index: 10;
+        animation: fadeIn 0.8s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-tabs {
+        display: flex;
+        padding: 0.5rem;
+        gap: 0.5rem;
+        background: var(--surface-variant);
+        border-radius: 9999px;
+        margin-bottom: 2rem;
+    }
+    
+    .auth-tab {
+        flex: 1;
+        padding: 0.75rem;
+        border-radius: 9999px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 700;
+        font-size: 0.875rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: transparent;
+        color: var(--text-muted);
+    }
+    
+    .auth-tab.active {
+        background: white;
+        color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .error-msg {
+        color: var(--error);
+        font-size: 0.75rem;
+        text-align: center;
+        padding: 0.75rem;
+        background: rgba(247, 75, 109, 0.05);
+        border: 1px solid rgba(247, 75, 109, 0.1);
+        border-radius: 1rem;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <!-- Neon Butterflies -->
+    <div class="butterfly" style="top: 20%; left: -10%; animation-delay: 0s;">
+        <svg viewBox="0 0 100 100">
+            <path class="wing" d="M50 50 L20 10 L5 30 L50 50 Z" />
+            <path class="wing" d="M50 50 L80 10 L95 30 L50 50 Z" style="animation-delay: 0.15s;" />
+            <circle cx="50" cy="50" r="2" fill="#652fe7" />
+        </svg>
+    </div>
+     <div class="butterfly" style="top: 30%; left: -5%; animation-delay: 0s;">
+        <svg viewBox="0 0 100 100">
+            <path class="wing" d="M50 50 L20 10 L5 30 L50 50 Z" />
+            <path class="wing" d="M50 50 L80 10 L95 30 L50 50 Z" style="animation-delay: 0.15s;" />
+            <circle cx="50" cy="50" r="2" fill="#652fe7" />
+        </svg>
+    </div>
+     <div class="butterfly" style="top: 50%; left: -6%; animation-delay: 0s;">
+        <svg viewBox="0 0 100 100">
+            <path class="wing" d="M50 50 L20 10 L5 30 L50 50 Z" />
+            <path class="wing" d="M50 50 L80 10 L95 30 L50 50 Z" style="animation-delay: 0.15s;" />
+            <circle cx="50" cy="50" r="2" fill="#652fe7" />
+        </svg>
+    </div>
+
+    <div class="auth-container">
+        <div class="text-center mb-6">
+            <div class="inline-flex pulse rounded-full bg-primary p-4 mb-4" style="display: inline-flex;">
+                <span class="material-symbols-outlined text-white text-3xl">auto_awesome</span>
+            </div>
+            <h1 class="text-3d italic text-7xl mb-2">ysha</h1>
+        </div>
+
+        <div class="glass-card">
+            <div class="auth-tabs">
+                <button id="tab-login" onclick="toggleAuth('login')" class="auth-tab active">Login</button>
+                <button id="tab-register" onclick="toggleAuth('register')" class="auth-tab">Register</button>
+            </div>
+
+            <div class="text-center mb-6">
+                <h2 id="auth-title" class="text-2xl mb-2">Welcome back</h2>
+                <p id="auth-subtitle" class="text-sm text-muted">Sign in to continue your conversations.</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="event.preventDefault(); handleAuth('/api/login')">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <div class="input-container">
+                        <span class="material-symbols-outlined icon">person</span>
+                        <input id="l-user" class="input-field" placeholder="username" type="text" required/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="input-container">
+                        <span class="material-symbols-outlined icon">lock</span>
+                        <input id="l-pass" class="input-field" placeholder="••••••••" type="password" required/>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-full">Sign In</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden" onsubmit="event.preventDefault(); handleAuth('/api/register')">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <div class="input-container">
+                        <span class="material-symbols-outlined icon">person</span>
+                        <input id="r-user" class="input-field" placeholder="username" type="text" required/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <div class="input-container">
+                        <span class="material-symbols-outlined icon">mail</span>
+                        <input id="r-email" class="input-field" placeholder="email@example.com" type="email" required/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="input-container">
+                        <span class="material-symbols-outlined icon">lock</span>
+                        <input id="r-pass" class="input-field" placeholder="••••••••" type="password" required/>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-full">Create Account</button>
+            </form>
+            
+            <p id="err" class="error-msg hidden"></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleAuth(type) {
+        const isL = type === 'login';
+        document.getElementById('login-form').classList.toggle('hidden', !isL);
+        document.getElementById('register-form').classList.toggle('hidden', isL);
+        
+        document.getElementById('tab-login').classList.toggle('active', isL);
+        document.getElementById('tab-register').classList.toggle('active', !isL);
+        
+        document.getElementById('auth-title').innerText = isL ? 'Welcome back' : 'Join the Pulse';
+        document.getElementById('auth-subtitle').innerText = isL ? 'Sign in to continue your conversations.' : 'Create an account to start connecting.';
+        document.getElementById('err').classList.add('hidden');
+    }
+
+    async function handleAuth(url) {
+        const data = url.includes('register') 
+            ? {username: document.getElementById('r-user').value, email: document.getElementById('r-email').value, password: document.getElementById('r-pass').value}
+            : {username: document.getElementById('l-user').value, password: document.getElementById('l-pass').value};
+        
+        const errEl = document.getElementById('err');
+        errEl.classList.add('hidden');
+
+        try {
+            const res = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
+            const result = await res.json();
+            if (res.ok) {
+                // Redirect directly to home for both login and registration
+                window.location.href = '/home';
+            } else {
+                errEl.innerText = result.error || "Authentication failed";
+                errEl.classList.remove('hidden');
+            }
+        } catch (err) {
+            console.error(err);
+            errEl.innerText = "Network Error: Please make sure the Django server is running";
+            errEl.classList.remove('hidden');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Privacy Settings</title>
+<style>
+    .settings-container { padding: 1.5rem 0; }
+    .section-title {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.1em;
+        margin-bottom: 1.5rem;
+        padding-left: 0.5rem;
+    }
+    
+    .blocked-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem;
+        background: var(--surface);
+        backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--outline);
+        border-radius: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .blocked-user {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .btn-unblock {
+        background: var(--surface-variant);
+        color: var(--primary);
+        font-weight: 800;
+        padding: 0.625rem 1.25rem;
+        border-radius: 9999px;
+        border: none;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-unblock:hover {
+        background: var(--primary);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="flex items-center gap-3 mb-8">
+        <button onclick="window.location.href='/home'" class="btn-ghost p-2 rounded-full">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h2 class="text-2xl font-bold">Privacy Center</h2>
+    </div>
+
+    <div id="blocked-list" class="mb-12">
+        <h3 class="section-title">Blocked Pulses</h3>
+        {% for u in blocked_users %}
+        <div id="user-{{ u.id }}" class="blocked-card">
+            <div class="blocked-user">
+                <img src="{% if u.profile_pic %}{{ u.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ u.username }}{% endif %}" class="avatar" style="width: 48px; height: 48px; border-radius: 1.25rem;">
+                <div>
+                    <h4 class="font-bold">@{{ u.username }}</h4>
+                    <p class="text-xs text-muted">Messages from this user are hidden</p>
+                </div>
+            </div>
+            <button onclick="unblockUser({{ u.id }})" class="btn-unblock">Unblock</button>
+        </div>
+        {% endfor %}
+
+        {% if not blocked_users %}
+        <div class="glass-card text-center py-16" style="opacity: 0.5;">
+            <span class="material-symbols-outlined text-primary mb-4" style="font-size: 3rem;">security</span>
+            <p class="text-sm font-bold italic">Your pulse environment is clear!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function unblockUser(id) {
+    try {
+        const res = await fetch('/api/toggle_block', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({user_id: id})
+        });
+        if (res.ok) {
+            document.getElementById(`user-${id}`).remove();
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+</script>
+{% endblock %}

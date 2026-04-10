@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Chat with {{ other_user.username }}</title>
+<style>
+    /* Chat specific overrides */
+    .app-nav { display: none; }
+    .main-content { 
+        padding-top: 80px; 
+        padding-bottom: 90px;
+        max-width: 800px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        {% if user.chat_background %}
+        background-image: url('{{ user.chat_background.url }}');
+        background-size: cover;
+        background-position: center;
+        {% endif %}
+    }
+    
+    .chat-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        scrollbar-width: none;
+    }
+    .chat-scroll::-webkit-scrollbar { display: none; }
+
+    .message-bubble {
+        max-width: 75%;
+        padding: 0.875rem 1.25rem;
+        border-radius: 1.5rem;
+        position: relative;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        line-height: 1.4;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .msg-sent {
+        align-self: flex-end;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+    }
+    
+    .msg-received {
+        align-self: flex-start;
+        background: white;
+        color: var(--text-main);
+        border-bottom-left-radius: 0.25rem;
+        border: 1px solid var(--outline);
+    }
+
+    .msg-media {
+        width: 100%;
+        max-width: 240px;
+        border-radius: 1rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .chat-footer {
+        position: fixed;
+        bottom: 0; left: 0; width: 100%;
+        padding: 1rem 1.5rem calc(1rem + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: var(--glass-blur);
+        border-top: 1px solid var(--outline);
+        z-index: 1001;
+    }
+
+    .input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        max-width: 800px;
+        margin: 0 auto;
+        position: relative;
+    }
+    
+    .msg-input {
+        flex: 1;
+        background: var(--surface-variant);
+        border: none;
+        border-radius: 1.5rem;
+        padding: 0.75rem 1.25rem;
+        font-family: inherit;
+        font-size: 0.9375rem;
+        outline: none;
+        max-height: 120px;
+        resize: none;
+    }
+
+    /* Dropdown Menus */
+    .dropdown-menu {
+        position: absolute;
+        bottom: 70px;
+        left: 0;
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-lg);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-width: 180px;
+        z-index: 1002;
+        border: 1px solid var(--outline);
+    }
+    
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        background: none;
+        border: none;
+        font-weight: 700;
+        font-size: 0.8125rem;
+        color: var(--text-main);
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+    }
+    
+    .menu-item:hover { background: var(--surface-variant); }
+    .menu-item.danger { color: #f44336; }
+
+    .more-dropdown {
+        top: 70px; right: 20px; bottom: auto; left: auto;
+    }
+
+    .hidden { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main id="chat-box" class="chat-scroll">
+    <!-- Messages populated via JS -->
+</main>
+
+<div class="chat-footer">
+    <!-- Attachment Menu -->
+    <div id="attachment-menu" class="dropdown-menu hidden">
+        <button onclick="triggerFile('photo')" class="menu-item"><span class="material-symbols-outlined">image</span>Photo</button>
+        <button onclick="triggerFile('video')" class="menu-item"><span class="material-symbols-outlined">videocam</span>Video</button>
+        <button onclick="triggerFile('song')" class="menu-item"><span class="material-symbols-outlined">music_note</span>Song</button>
+        <button onclick="triggerFile('document')" class="menu-item"><span class="material-symbols-outlined">description</span>Document</button>
+    </div>
+    
+    <div class="input-wrapper">
+        <button onclick="toggleMenu('attachment-menu')" class="btn-ghost p-2 rounded-full">
+            <span class="material-symbols-outlined">add_circle</span>
+        </button>
+        <textarea id="message-input" class="msg-input" placeholder="Type a pulse..." rows="1"></textarea>
+        <button onclick="sendMessage()" class="send-btn" style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer;">
+            <span class="material-symbols-outlined">send</span>
+        </button>
+    </div>
+</div>
+
+<!-- Hidden inputs for files -->
+<input type="file" id="file_input_photo" class="hidden" accept="image/*" onchange="uploadMedia(this, 'photo')">
+<input type="file" id="file_input_video" class="hidden" accept="video/*" onchange="uploadMedia(this, 'video')">
+<input type="file" id="file_input_song" class="hidden" accept="audio/*" onchange="uploadMedia(this, 'song')">
+<input type="file" id="file_input_document" class="hidden" accept="*" onchange="uploadMedia(this, 'document')">
+
+<!-- More Menu overlay (inserted via JS to header) -->
+<div id="more-menu" class="dropdown-menu more-dropdown hidden">
+    <button onclick="deleteChat()" class="menu-item">
+        <span class="material-symbols-outlined">delete_sweep</span>Delete Chat
+    </button>
+    <button onclick="triggerWallpaper()" class="menu-item">
+        <span class="material-symbols-outlined">wallpaper</span>Update Wallpaper
+    </button>
+    <button id="block-btn" onclick="toggleBlock()" class="menu-item danger">
+        <span class="material-symbols-outlined">block</span>{% if is_blocked %}Unblock{% else %}Block Member{% endif %}
+    </button>
+</div>
+
+<!-- Hidden Wallpaper Logic -->
+<form id="wallpaper-form" style="display:none;">
+    {% csrf_token %}
+    <input type="file" id="wallpaper-input" accept="image/*" onchange="uploadWallpaper(this)">
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const otherUserId = {{ other_user.id }};
+    const currentUserId = {{ user.id }};
+    const chatBox = document.getElementById('chat-box');
+    const input = document.getElementById('message-input');
+    
+    let isBlocked = {% if is_blocked_by_me %}true{% else %}false{% endif %};
+
+    function toggleMenu(id) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => {
+            if(m.id !== id) m.classList.add('hidden');
+        });
+        document.getElementById(id).classList.toggle('hidden');
+    }
+
+    function triggerFile(type) {
+        document.getElementById(`file_input_${type}`).click();
+        toggleMenu('attachment-menu');
+    }
+
+    async function fetchMessages() {
+        try {
+            const res = await fetch(`/api/messages/${otherUserId}`);
+            const messages = await res.json();
+            
+            chatBox.innerHTML = '';
+            messages.forEach(msg => {
+                const isMine = msg.sender_id === currentUserId;
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble ${isMine ? 'msg-sent' : 'msg-received'}`;
+                
+                if (msg.media_url) {
+                    if (msg.type === 'photo') {
+                        bubble.innerHTML = `<img src="${msg.media_url}" class="msg-media">`;
+                    } else if (msg.type === 'video') {
+                        bubble.innerHTML = `<video src="${msg.media_url}" class="msg-media" controls></video>`;
+                    } else if (msg.type === 'song') {
+                        bubble.innerHTML = `<audio src="${msg.media_url}" style="width: 200px;" controls></audio>`;
+                    } else {
+                        bubble.innerHTML = `<a href="${msg.media_url}" target="_blank" style="color: inherit; text-decoration: underline;">Attachment</a>`;
+                    }
+                }
+                
+                if (msg.message) {
+                    const text = document.createElement('div');
+                    text.innerText = msg.message;
+                    bubble.appendChild(text);
+                }
+                
+                chatBox.appendChild(bubble);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } catch (err) { console.error(err); }
+    }
+
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+        
+        const fd = new FormData();
+        fd.append('receiver_id', otherUserId);
+        fd.append('message', text);
+        fd.append('type', 'text');
+        
+        try {
+            const res = await fetch('/api/send_message', { method: 'POST', body: fd });
+            if (res.ok) { input.value = ''; fetchMessages(); }
+            else if (res.status === 403) alert("Send failed: Communication blocked");
+        } catch (err) { console.error(err); }
+    }
+
+    async function uploadMedia(fileInput, type) {
+        if(!fileInput.files[0]) return;
+        const fd = new FormData();
+        fd.append('receiver_id', otherUserId);
+        fd.append('media', fileInput.files[0]);
+        fd.append('type', type);
+
+        try {
+            const res = await fetch('/api/send_message', { method: 'POST', body: fd });
+            if (res.ok) fetchMessages();
+            else alert("Upload failed");
+        } catch (err) { console.error(err); }
+    }
+
+    async function toggleBlock() {
+        try {
+            const res = await fetch('/api/toggle_block', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: otherUserId})
+            });
+            const data = await res.json();
+            if(res.ok) {
+                alert(data.status === 'blocked' ? "User Blocked" : "User Unblocked");
+                window.location.reload();
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    async function deleteChat() {
+        if(!confirm("Delete all messages for this chat?")) return;
+        try {
+            const res = await fetch('/api/delete_chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+                body: JSON.stringify({user_id: otherUserId})
+            });
+            if(res.ok) window.location.reload();
+        } catch (err) { console.error(err); }
+    }
+
+    function triggerWallpaper() {
+        document.getElementById('wallpaper-input').click();
+    }
+
+    async function uploadWallpaper(input) {
+        if(!input.files[0]) return;
+        const fd = new FormData();
+        fd.append('chat_background', input.files[0]);
+        try {
+            const res = await fetch('/api/update_settings', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: fd
+            });
+            if(res.ok) window.location.reload();
+            else alert("Wallpaper update failed.");
+        } catch(err) { console.error(err); }
+    }
+
+    // Header Setup
+    document.querySelector('.app-header').innerHTML = `
+        <div class="flex items-center gap-3">
+            <button onclick="window.location.href='/home'" class="btn-ghost p-2 rounded-full">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="flex items-center gap-3" onclick="window.location.href='{% url 'friend_profile' other_user.id %}'" style="cursor: pointer;">
+                <div class="avatar-container" style="position: relative;">
+                    <img src="{% if other_user.profile_pic %}{{ other_user.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ other_user.username }}{% endif %}" alt="{{ other_user.username }}" class="avatar">
+                </div>
+                <div class="flex flex-col">
+                    <span class="chat-name">{% if other_user.full_name %}{{ other_user.full_name }}{% else %}{{ other_user.username }}{% endif %}</span>
+                    <span class="text-xs font-bold text-primary uppercase" style="font-size: 0.6rem; letter-spacing: 0.05em;">Active Now</span>
+                </div>
+            </div>
+        </div>
+        <button onclick="toggleMenu('more-menu')" class="btn-ghost p-2 rounded-full">
+            <span class="material-symbols-outlined">more_vert</span>
+        </button>
+    `;
+
+    setInterval(fetchMessages, 5000);
+    fetchMessages();
+</script>
+{% endblock %}

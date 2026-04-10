@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Isha - Welcome</title>
+<style>
+    /* Specific overrides for a full-screen splash feel */
+    .app-header { display: none; }
+    .app-nav { display: none; }
+    .main-content { 
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        overflow: hidden;
+    }
+    
+    .splash-logo {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 6rem;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        line-height: 1;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    
+    .logo-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 150%;
+        height: 150%;
+        background: radial-gradient(circle, var(--primary-light) 0%, transparent 70%);
+        opacity: 0.2;
+        filter: blur(40px);
+        z-index: -1;
+    }
+
+    .splash-tagline {
+        max-width: 300px;
+        color: var(--text-muted);
+        font-weight: 500;
+        line-height: 1.6;
+        margin-bottom: 3rem;
+        animation: fadeInUp 1s ease-out 0.5s both;
+    }
+
+    .start-btn {
+        width: 240px;
+        padding: 1.25rem;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        box-shadow: 0 10px 30px rgba(101, 47, 231, 0.3);
+        transition: all 0.3s ease;
+        animation: fadeInUp 1s ease-out 0.8s both;
+    }
+    
+    .start-btn:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 15px 40px rgba(101, 47, 231, 0.4);
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+ <div class="text-center mb-6">
+    <div class="inline-flex pulse rounded-full bg-primary p-4 mb-4" style="display: inline-flex;">
+                <span class="material-symbols-outlined text-white text-3xl">auto_awesome</span>
+            </div>
+<div id="ns" class="splash-logo  splash-tagline">
+    Ysha
+    <div class="logo-glow"></div>
+</div>
+</div>
+<style>
+    #ns {
+        background: linear-gradient(80deg, rgb(138, 30, 246), rgb(246, 11, 187));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+<p class="splash-tagline">
+    Connect through the luminous pulse of intentional conversation.
+</p>
+
+<a href="{% url 'auth' %}" class="start-btn">
+    Get Started
+</a>
+
+<div class="butterfly" style="top: 30%; right: 10%; animation-delay: -2s;">
+    <svg viewBox="0 0 100 100">
+        <path class="wing" d="M50 50 L20 10 L5 30 L50 50 Z" />
+        <path class="wing" d="M50 50 L80 10 L95 30 L50 50 Z" style="animation-delay: 0.15s;" />
+        <circle cx="50" cy="50" r="2" fill="var(--primary)" />
+    </svg>
+</div>
+
+<div class="butterfly" style="bottom: 20%; left: 15%; animation-delay: -5s;">
+    <svg viewBox="0 0 100 100">
+        <path class="wing" d="M50 50 L20 10 L5 30 L50 50 Z" />
+        <path class="wing" d="M50 50 L80 10 L95 30 L50 50 Z" style="animation-delay: 0.15s;" />
+        <circle cx="50" cy="50" r="2" fill="var(--secondary)" />
+    </svg>
+</div>
+{% endblock %}

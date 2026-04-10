@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Discover Pulses</title>
+<style>
+    .discover-header { margin-bottom: 1.5rem; }
+    
+    .tab-pills {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        background: var(--surface-variant);
+        padding: 0.4rem;
+        border-radius: 1.25rem;
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .tab-pill {
+        flex: 1;
+        text-align: center;
+        padding: 0.625rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    
+    .tab-pill.active {
+        background: white;
+        color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .media-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .media-card {
+        aspect-ratio: 1 / 1;
+        border-radius: 1.5rem;
+        overflow: hidden;
+        background: var(--surface-variant);
+        position: relative;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .media-card img, .media-card video { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Premium Reels Viewer Overlay */
+    #reels-viewer.modal-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: black !important;
+        z-index: 5000 !important;
+        padding: 0 !important;
+        display: none;
+        flex-direction: column;
+    }
+
+    #reels-container {
+        width: 100%;
+        height: 100vh;
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    #reels-container::-webkit-scrollbar { display: none; }
+    
+    .reel-post {
+        width: 100%;
+        height: 100vh;
+        scroll-snap-align: start;
+        position: relative;
+        overflow: hidden;
+        background: black;
+    }
+    
+    .reel-media { 
+        width: 100%; 
+        height: 100%; 
+        object-fit: contain;
+        background: black;
+    }
+    
+    .reel-actions {
+        position: absolute;
+        right: 1.5rem;
+        bottom: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        align-items: center;
+        z-index: 100;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    }
+    
+    .action-btn {
+        background: transparent;
+        border: none;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+    .action-btn:active { transform: scale(0.9); }
+    .action-btn .material-symbols-outlined { font-size: 38px !important; }
+    .action-btn.active .material-symbols-outlined { color: #ff2d55; font-variation-settings: 'FILL' 1; }
+    .action-label { font-size: 11px; font-weight: 800; }
+
+    .reel-user-top {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        left: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 100;
+        color: white;
+        cursor: pointer;
+        background: rgba(0,0,0,0.2);
+        padding: 8px 16px;
+        border-radius: 9999px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .reel-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid white; }
+    .reel-username { font-weight: 800; font-size: 0.9rem; letter-spacing: -0.01em; }
+    
+    .close-reels {
+        position: absolute;
+        top: env(safe-area-inset-top, 20px);
+        right: 1.5rem;
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(10px);
+        color: white; border: 1px solid rgba(255,255,255,0.2);
+        z-index: 1000; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+
+    .fab {
+        position: fixed;
+        right: 1.5rem;
+        bottom: 120px;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(101, 47, 231, 0.4);
+        z-index: 100;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="discover-container">
+    <header class="discover-header">
+        <h2 class="text-2xl font-bold mb-1">Discover</h2>
+        <p class="text-xs text-muted font-bold uppercase tracking-wider">Luminous community pulse</p>
+    </header>
+
+    <div class="tab-pills">
+        <a href="?tab=global" class="tab-pill {% if active_tab == 'global' %}active{% endif %}">GLOBAL</a>
+        <a href="?tab=friends" class="tab-pill {% if active_tab == 'friends' %}active{% endif %}">FRIENDS</a>
+        <a href="?tab=my_posts" class="tab-pill {% if active_tab == 'my_posts' %}active{% endif %}">MY POSTS</a>
+    </div>
+
+    <!-- Posts Grid -->
+    <div id="posts-grid" class="media-grid">
+        {% for post in posts %}
+        <div class="media-card" onclick="openReels({{ forloop.counter0 }})" ondblclick="event.stopPropagation(); likePost({{ post.id }}, document.querySelector('#post-{{ forloop.counter0 }} .action-btn'))">
+            {% if post.file_type == 'video' %}
+            <video muted loop><source src="{{ post.media_url.url }}" type="video/mp4"></video>
+            <span class="material-symbols-outlined" style="position: absolute; top: 10px; right: 10px; color: white;">play_circle</span>
+            {% else %}
+            <img src="{{ post.media_url.url }}">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <button id="post-fab" onclick="toggleModal('upload-modal', true)" class="fab" style="{% if active_tab != 'my_posts' %}display:none;{% endif %}">
+        <span class="material-symbols-outlined" style="font-size: 2.5rem;">add</span>
+    </button>
+</div>
+
+<!-- Upload Modal -->
+<div id="upload-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 class="text-xl font-bold mb-4">Upload</h3>
+        <p class="text-xs text-muted font-bold uppercase mb-4">Select Visibility</p>
+        <div class="flex flex-col gap-3">
+            <button onclick="startUpload('global')" class="btn btn-primary w-full py-4 text-sm">GLOBAL (EVERYONE)</button>
+            <button onclick="startUpload('friends')" class="btn w-full py-4 text-sm" style="background-color: rgb(13, 239, 40); color: antiquewhite; border: 1px solid var(--outline);">FRIENDS ONLY</button>
+            <button onclick="toggleModal('upload-modal', false)" class="btn w-full py-4 text-sm" style="color:white; border-radius: 20px; background-color: rgb(239, 13, 13)">Cancel</button>
+        </div>
+        <input type="file" id="post_input" class="hidden" accept="image/*,video/*">
+    </div>
+</div>
+
+<!-- Share Modal (Friends from context) -->
+<div id="share-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 class="text-xl font-bold mb-4">Share Pulse</h3>
+        <div style="max-height: 300px; overflow-y: auto;">
+            {% for f in friends %}
+            <div class="share-friend" onclick="sharePostTo({{ f.id }})">
+                <div class="flex items-center gap-3">
+                    <img src="{% if f.profile_pic %}{{ f.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ f.username }}{% endif %}" class="avatar" style="width: 40px; height: 40px; border-radius: 50%;">
+                    <span class="font-bold">@{{ f.username }}</span>
+                </div>
+                <span class="material-symbols-outlined text-primary">send</span>
+            </div>
+            {% empty %}
+            <p class="text-center text-muted">No friends yet. Add some to share!</p>
+            {% endfor %}
+        </div>
+        <button onclick="toggleModal('share-modal', false)" class="btn-ghost w-full mt-4 font-bold text-xs">Close</button>
+    </div>
+</div>
+
+<!-- Reels Viewer -->
+<div id="reels-viewer" class="modal-overlay">
+    <button onclick="closeReels()" class="close-reels"><span class="material-symbols-outlined">close</span></button>
+    <div id="reels-container">
+        {% for post in posts %}
+        <div class="reel-post" id="post-{{ forloop.counter0 }}" data-pid="{{ post.id }}">
+            {% if post.file_type == 'video' %}
+            <video class="reel-media" loop controls ondblclick="likePost({{ post.id }}, this.parentElement.querySelector('.action-btn'))"><source src="{{ post.media_url.url }}" type="video/mp4"></video>
+            {% else %}
+            <img class="reel-media" src="{{ post.media_url.url }}" ondblclick="likePost({{ post.id }}, this.parentElement.querySelector('.action-btn'))">
+            {% endif %}
+
+            <!-- Top Left: User Info -->
+            <div class="reel-user-top" onclick="window.location.href='{% url 'friend_profile' post.user.id %}'">
+                <img class="reel-avatar" src="{% if post.user.profile_pic %}{{ post.user.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ post.user.username }}{% endif %}">
+                <span class="reel-username">@{{ post.user.username }}</span>
+            </div>
+            
+            <!-- Bottom Right: Dynamic Actions -->
+            <div class="reel-actions">
+                <button onclick="likePost({{ post.id }}, this)" class="action-btn {% if post.is_liked %}active{% endif %}">
+                    <span class="material-symbols-outlined">favorite</span>
+                    <span class="action-label">{{ post.like_count }}</span>
+                </button>
+                <!-- COMMENT BUTTON NOW REDIRECTS TO DEDICATED PAGE -->
+                <a href="{% url 'comment_page' post.id %}" class="action-btn" style="text-decoration: none;">
+                    <span class="material-symbols-outlined">comment</span>
+                    <span class="action-label">{{ post.comments.count }}</span>
+                </a>
+                <a href="{% url 'share_page' post.id %}" class="action-btn" style="text-decoration: none;">
+                    <span class="material-symbols-outlined">share</span>
+                    <span class="action-label">Share</span>
+                </a>
+                
+                {% if post.user == user %}
+                <button onclick="deletePost({{ post.id }})" class="action-btn">
+                    <span class="material-symbols-outlined" style="color: #ff4d4d;">delete</span>
+                    <span class="action-label" style="color: #ff4d4d;">Delete</span>
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Comment preview section -->
+            <div class="reel-overlay">
+                <div class="reel-comments" id="comments-{{ post.id }}">
+                    {% for c in post.comment_list %}
+                        {% if not c.parent %}
+                        <div class="comment-item" style="margin-bottom: 8px;">
+                            <div class="flex items-start gap-2">
+                                <b class="text-xs">@{{ c.user.username }}:</b>
+                                <span class="text-xs">{{ c.text }}</span>
+                                <!-- Reply button still works with modal if you want, but we'll keep it simple -->
+                                <button onclick="openReplyModal({{ post.id }}, {{ c.id }}, '@{{ c.user.username }}')" class="text-[8px] opacity-70 font-bold ml-auto">REPLY</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Comment Modal (for replies only) -->
+<div id="comment-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 class="text-xl font-bold mb-2">Reply to Comment</h3>
+        <p id="replying-to" class="text-xs text-primary font-bold mb-4 hidden"></p>
+        <textarea id="comment-text" class="input-field w-full mb-4" placeholder="Write your reply..." style="height: 100px; padding: 1rem; border-radius: 1.5rem; resize: none;"></textarea>
+        <div class="flex gap-3">
+            <button onclick="submitReply()" class="btn btn-primary flex-1">Post Reply</button>
+            <button onclick="toggleModal('comment-modal', false)" class="btn-ghost" style="color: var(--error)">Cancel</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPostId = null;
+let activeReplyParentId = null;
+let activeReplyPostId = null;
+
+function openReels(idx) {
+    document.getElementById('reels-viewer').style.display = 'flex';
+    if(document.getElementById('post-fab')) document.getElementById('post-fab').style.display = 'none';
+    document.body.style.overflow = 'hidden';
+    const el = document.getElementById(`post-${idx}`);
+    el.scrollIntoView();
+    if(el.querySelector('video')) el.querySelector('video').play();
+}
+
+function toggleModal(id, show) {
+    const el = document.getElementById(id);
+    if(show) el.classList.add('active');
+    else el.classList.remove('active');
+}
+
+function closeReels() {
+    document.getElementById('reels-viewer').style.display = 'none';
+    if(document.getElementById('post-fab')) {
+        {% if active_tab == 'my_posts' %}
+        document.getElementById('post-fab').style.display = 'flex';
+        {% endif %}
+    }
+    document.body.style.overflow = 'auto';
+    document.querySelectorAll('.reel-post video').forEach(v => v.pause());
+}
+
+async function likePost(pid, btn) {
+    if(!btn) return;
+    const res = await fetch('/api/like_post', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({post_id: pid})
+    });
+    if (res.ok) {
+        const data = await res.json();
+        btn.classList.toggle('active');
+        const count = btn.querySelector('.action-label');
+        if(count) {
+            count.innerText = data.status === 'liked' ? parseInt(count.innerText)+1 : parseInt(count.innerText)-1;
+        }
+    }
+}
+
+// Open share modal
+function openShare(pid) {
+    currentPostId = pid;
+    toggleModal('share-modal', true);
+}
+
+// Share to friend
+async function sharePostTo(fid) {
+    const res = await fetch('/api/share_post', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({post_id: currentPostId, friend_id: fid})
+    });
+    if (res.ok) {
+        alert("Shared successfully!");
+        toggleModal('share-modal', false);
+    } else {
+        const err = await res.json();
+        alert("Error: " + (err.error || "Could not share"));
+    }
+}
+
+// Open reply modal (for replying to a comment)
+function openReplyModal(postId, commentId, username) {
+    activeReplyPostId = postId;
+    activeReplyParentId = commentId;
+    document.getElementById('replying-to').innerText = `Replying to ${username}`;
+    document.getElementById('replying-to').classList.remove('hidden');
+    toggleModal('comment-modal', true);
+    document.getElementById('comment-text').focus();
+}
+
+// Submit reply (using the same comment API with parent_id)
+async function submitReply() {
+    const txt = document.getElementById('comment-text').value.trim();
+    if (!txt) return;
+    
+    const res = await fetch('/api/comment_post', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({
+            post_id: activeReplyPostId, 
+            text: txt,
+            parent_id: activeReplyParentId
+        })
+    });
+    
+    if (res.ok) {
+        toggleModal('comment-modal', false);
+        document.getElementById('comment-text').value = '';
+        document.getElementById('replying-to').classList.add('hidden');
+        // Reload to show new reply (or you could dynamically insert it)
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert("Failed to post reply: " + (err.error || "Unknown error"));
+    }
+}
+
+let selectedVisibility = 'global';
+function startUpload(vis) {
+    selectedVisibility = vis;
+    document.getElementById('post_input').click();
+}
+
+document.getElementById('post_input').onchange = async function() {
+    if(!this.files[0]) return;
+    const fd = new FormData();
+    fd.append('file', this.files[0]);
+    fd.append('visibility', selectedVisibility);
+    
+    document.getElementById('upload-modal').innerHTML = '<h3 class="text-xl font-bold">Uploading...</h3>';
+    
+    const res = await fetch('/api/upload_post', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        body: fd
+    });
+    if (res.ok) window.location.reload();
+};
+
+async function deletePost(pid) {
+    if (!confirm("Eternal deletion of this pulse. Proceed?")) return;
+    const res = await fetch('/api/delete_post', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({post_id: pid})
+    });
+    if (res.ok) window.location.reload();
+}
+</script>
+{% endblock %}

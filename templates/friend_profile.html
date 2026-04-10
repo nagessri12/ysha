@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>{{ friend.username }}'s Profile</title>
+<style>
+    .profile-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+    
+    .profile-avatar-wrapper {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .profile-avatar-lg {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        padding: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .profile-avatar-lg img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--bg-main);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+    
+    .stat-card {
+        background: var(--surface-variant);
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stat-value {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 1.875rem;
+        font-weight: 800;
+        color: var(--primary);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+    }
+
+    .bio-box {
+        background: var(--surface-variant);
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        min-height: 120px;
+        color: var(--text-main);
+        font-size: 0.9375rem;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="flex items-center gap-3 mb-6">
+        <button onclick="history.back()" class="btn-ghost p-2 rounded-full">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h2 class="text-xl font-bold">Pulse Profile</h2>
+    </div>
+
+    <!-- Central Profile Section -->
+    <header class="profile-header">
+        <div class="profile-avatar-wrapper">
+            <div class="profile-avatar-lg">
+                <img src="{% if friend.profile_pic %}{{ friend.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ friend.username }}{% endif %}" alt="{{ friend.username }}">
+            </div>
+        </div>
+        
+        <div class="profile-info">
+            <h2 class="text-2xl font-bold mb-2">{% if friend.full_name %}{{ friend.full_name }}{% else %}{{ friend.username }}{% endif %}</h2>
+            <div class="flex items-center justify-center gap-2">
+                <span class="btn-ghost text-xs font-bold px-4 py-1 rounded-full uppercase" style="background: rgba(101, 47, 231, 0.1);">@{{ friend.username }}</span>
+                {% if friend.is_online %}
+                <span class="text-xs font-bold text-secondary uppercase animate-pulse">● Online</span>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-value">{{ friends_count }}</span>
+            <span class="stat-label">Friends</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ posts_count }}</span>
+            <span class="stat-label">Posts</span>
+        </div>
+    </section>
+
+    <!-- Bio Section -->
+    <div class="form-group">
+        <label class="form-label">About Pulse</label>
+        <div class="bio-box">
+            {% if friend.bio %}{{ friend.bio }}{% else %}This user is resonating in silence...{% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-8 flex flex-col gap-4">
+        {% if rel_status == 'accepted' %}
+            <button onclick="window.location.href='{% url 'chat_window' friend.id %}'" class="btn btn-primary w-full py-4">
+                Chat Now
+            </button>
+        {% elif rel_status == 'pending' %}
+            {% if is_sender %}
+                <button class="btn w-full py-4" style="background: var(--surface-variant); color: var(--text-muted); cursor: default;">
+                    Request Sent
+                </button>
+            {% else %}
+                <button onclick="sendRequest({{ friend.id }})" class="btn btn-primary w-full py-4">
+                    Accept Request
+                </button>
+            {% endif %}
+        {% else %}
+            <button onclick="sendRequest({{ friend.id }})" class="btn btn-primary w-full py-4">
+                Add Friend
+            </button>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function sendRequest(fid) {
+    const res = await fetch('/api/send_request', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({user_id: fid})
+    });
+    if (res.ok) window.location.reload();
+}
+</script>
+{% endblock %}

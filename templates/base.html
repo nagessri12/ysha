@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Isha Social</title>
+    
+    {% load static %}
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#652fe7">
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-main">
+    <!-- TopAppBar -->
+    <header class="app-header">
+        <div class="flex items-center gap-3">
+            {% if user.is_authenticated %}
+            <div class="avatar-container">
+                <img src="{% if user.profile_pic %}{{ user.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}{% endif %}" alt="{{ user.username }}" class="avatar" style="margin-top: 10px;">
+                </div>
+                <div id="ns" class="splash-logo  splash-tagline">
+                    Ysha
+                    <div class="logo-glow"></div> 
+                      <style>
+                        #ns {
+        background: linear-gradient(80deg, rgb(138, 30, 246), rgb(246, 11, 187));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2rem;
+    }
+                        </style>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if user.is_authenticated %}
+        <div class="flex items-center gap-1">
+            {% if request.path == '/home' or request.path == '/' %}
+            <button onclick="window.location.href='{% url 'settings' %}'" class="btn-ghost p-2 rounded-full flex items-center justify-center">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+            {% elif '/settings' in request.path or '/profile' in request.path %}
+            <button onclick="window.location.href='{% url 'logout' %}'" class="btn-ghost p-2 rounded-full flex items-center justify-center">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </header>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- BottomNavBar -->
+    {% if user.is_authenticated %}
+    <nav class="app-nav">
+        <a href="{% url 'home' %}" class="nav-item {% if request.path == '/home' or request.path == '/' %}active{% endif %}">
+            <span class="material-symbols-outlined icon" style="{% if request.path == '/home' or request.path == '/' %}font-variation-settings: 'FILL' 1;{% endif %}">chat_bubble</span>
+            <span class="label">Chats</span>
+        </a>
+        <a href="{% url 'discover' %}" class="nav-item {% if request.path == '/discover' %}active{% endif %}">
+            <span class="material-symbols-outlined icon" style="{% if request.path == '/discover' %}font-variation-settings: 'FILL' 1;{% endif %}">explore</span>
+            <span class="label">Discover</span>
+        </a>
+        <a href="{% url 'profile' %}" class="nav-item {% if request.path == '/profile' %}active{% endif %}">
+            <span class="material-symbols-outlined icon" style="{% if request.path == '/profile' %}font-variation-settings: 'FILL' 1;{% endif %}">person</span>
+            <span class="label">Profile</span>
+        </a>
+    </nav>
+    {% endif %}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{% static 'sw.js' %}")
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Registration Failed', err));
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
